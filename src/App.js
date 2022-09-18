@@ -21,7 +21,7 @@ function App() {
             {isAuth && <button className="button" onClick={() => firebaseService.signOut()}>Log Out</button>}
           </nav>
           <Routes>
-            <Route path="/" element={<Links />} />
+            <Route path="/startpage/" element={<Links />} />
           </Routes>
         </Router>
       </div>

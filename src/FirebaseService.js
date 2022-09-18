@@ -6,7 +6,7 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, getDocs, collection, deleteDoc, doc } from "firebase/firestore";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { useState } from 'react';
-import { firebaseConfig } from "./config";
+import { firebaseConfig, defaultUrl } from "./config";
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -30,7 +30,7 @@ const firebaseService = {
         console.log(result);
         localStorage.setItem("isAuth", true);
         firebaseService.setIsAuth(true);
-        window.location.pathname = "/";
+        window.location.pathname = defaultUrl;
         return result;
         // }
     },
@@ -39,7 +39,7 @@ const firebaseService = {
         await signOut(auth);
         localStorage.clear();
         firebaseService.setIsAuth(false);
-        window.location.pathname = "/";
+        window.location.pathname = defaultUrl;
     },
 
     getDocs: async (collectionName) => {

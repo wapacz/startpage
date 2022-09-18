@@ -10,3 +10,5 @@ export const firebaseConfig = {
     messagingSenderId: "871363310217",
     appId: "1:871363310217:web:d40fc5cbdb5739b2344c58"
 };
+
+export const defaultUrl = '/startpage/';
