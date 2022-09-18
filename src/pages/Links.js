@@ -19,7 +19,7 @@ const Links = () => {
 
     useEffect(() => {
         getLinks()
-    });
+    }, [getLinks]);
 
     return (
         <div className="links">
