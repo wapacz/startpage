@@ -18,18 +18,19 @@ const firebaseService = {
 
     useState: () => {
         const [isAuth, setIsAuth] = useState(localStorage.getItem("isAuth"));
-        firebaseService.setIsAuth = setIsAuth;
+        firebaseService._setIsAuth = setIsAuth;
+        firebaseService._isAuth = isAuth;
         return isAuth;
     },
 
-    isAuth: () => localStorage.getItem("isAuth"),
+    isAuth: () => firebaseService._isAuth,
 
     signIn: async () => {
         // if (!firebaseService.isAuth()) {
         const result = await signInWithPopup(auth, provider);
         console.log(result);
         localStorage.setItem("isAuth", true);
-        firebaseService.setIsAuth(true);
+        firebaseService._setIsAuth(true);
         window.location.pathname = defaultUrl;
         return result;
         // }
@@ -38,7 +39,7 @@ const firebaseService = {
     signOut: async () => {
         await signOut(auth);
         localStorage.clear();
-        firebaseService.setIsAuth(false);
+        firebaseService._setIsAuth(false);
         window.location.pathname = defaultUrl;
     },
 

@@ -2,10 +2,13 @@
  *   Copyright (c) 2022 
  *   All rights reserved.
  */
-import './App.css';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+// import './App.css';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { firebaseService } from "./FirebaseService";
+import SearchAppBar from './SearchAppBar';
+import PrimarySearchAppBar from './PrimarySearchAppBar';
 import Links from './pages/Links';
+import Button from '@mui/material/Button';
 
 function App() {
 
@@ -13,18 +16,16 @@ function App() {
 
   return (
     <div className="app">
-      <div className="container">
+      {!isAuth && <Button onClick={() => firebaseService.signIn()}>Sign in</Button>}
+      {isAuth && <div className="container">
+        <PrimarySearchAppBar></PrimarySearchAppBar>
         <Router>
-          <nav className="nav">
-            {/* <Link to="/">Links</Link> */}
-            {!isAuth && <button className="button" onClick={() => firebaseService.signIn()}>Sign in with Google</button>}
-            {isAuth && <button className="button" onClick={() => firebaseService.signOut()}>Log Out</button>}
-          </nav>
           <Routes>
+            <Route path="*" element={<Navigate to="/startpage" />} />
             <Route path="/startpage/" element={<Links />} />
           </Routes>
         </Router>
-      </div>
+      </div>}
     </div>
   );
 }
