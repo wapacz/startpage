@@ -5,7 +5,6 @@
 import './Links.css';
 import React, { useState, useEffect, useCallback } from 'react'
 import { firebaseService } from '../FirebaseService';
-// import PropTypes from 'prop-types'
 
 const Link = props => (
     <div className="link">{props.name} <a href={props.url} {...(props.newTab && { target: '_blank', rel: 'noreferrer' })}>{props.url}</a></div>
@@ -23,7 +22,7 @@ const Links = () => {
     }, [getLinks]);
 
     return (
-        <div className="links">
+        <div className='links'>
             {linksList.map(link => <Link key={link.url} name={link.name} url={link.url} newTab={link.newTab} />)}
         </div>
     )
