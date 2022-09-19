@@ -5,7 +5,6 @@
 // import './App.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { firebaseService } from "./FirebaseService";
-import SearchAppBar from './SearchAppBar';
 import PrimarySearchAppBar from './PrimarySearchAppBar';
 import Links from './pages/Links';
 import Button from '@mui/material/Button';
