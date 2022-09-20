@@ -29,7 +29,6 @@ export default function PrimarySearchAppBar({ window }) {
     const [mobileOpen, setMobileOpen] = React.useState(false);
 
     const drawer = (
-
         <Box onClick={() => setMobileOpen(!mobileOpen)} sx={{ textAlign: 'center' }}>
             <Typography variant="h6" sx={{ my: 2 }}>
                 Start page
@@ -62,7 +61,7 @@ export default function PrimarySearchAppBar({ window }) {
                         aria-label="open drawer"
                         edge="start"
                         onClick={() => setMobileOpen(!mobileOpen)}
-                        sx={{ mr: 2, display: { sm: 'none' } }}
+
                     >
                         <MenuIcon />
                     </IconButton>
@@ -95,7 +94,7 @@ export default function PrimarySearchAppBar({ window }) {
                     ModalProps={{
                         keepMounted: true, // Better open performance on mobile.
                     }}
-                    sx={{ display: { xs: 'block', sm: 'none' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH }, }}
+                    sx={{ '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH }, }}
                 >
                     {drawer}
                 </Drawer>

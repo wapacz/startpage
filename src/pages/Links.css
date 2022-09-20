@@ -3,5 +3,11 @@
  *   All rights reserved.
  */
 .links {
+    width: 100%;
     padding: 10px;
+}
+
+a {
+    text-decoration: none;
+    color: rgb(69, 69, 76);
 }
