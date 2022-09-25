@@ -2,6 +2,7 @@
  *   Copyright (c) 2022 
  *   All rights reserved.
  */
+
 .links {
     width: 100%;
     padding: 10px;
@@ -10,4 +11,21 @@
 a {
     text-decoration: none;
     color: rgb(69, 69, 76);
+}
+
+.card {
+    display: inline-block;
+    width: 100%;
+    position: relative;
+}
+
+.cardActionBar {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+}
+
+.loadingWrapper div {
+    display: inline-block;
+    padding: 10px;
 }
