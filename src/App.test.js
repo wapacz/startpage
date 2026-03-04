@@ -1,8 +1,15 @@
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-test('renders learn react link', () => {
-  render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+jest.mock('./FirebaseService', () => ({
+    firebaseService: {
+        useState: () => false,
+        signIn: jest.fn(),
+    }
+}));
+
+test('renders sign in button when not authenticated', () => {
+    render(<App />);
+    const signInButton = screen.getByText(/sign in with google/i);
+    expect(signInButton).toBeInTheDocument();
 });

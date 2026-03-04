@@ -3,7 +3,7 @@
  *   All rights reserved.
  */
 import { initializeApp } from "firebase/app";
-import { getFirestore, getDocs, collection, deleteDoc, doc } from "firebase/firestore";
+import { getFirestore, getDocs, collection, deleteDoc, doc, addDoc, updateDoc } from "firebase/firestore";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { useState } from 'react';
 import { firebaseConfig, defaultUrl } from "./config";
@@ -52,6 +52,39 @@ const firebaseService = {
 
     deletePost: async (collectionName, id) => {
         const ref = doc(db, collectionName, id);
+        await deleteDoc(ref);
+    },
+
+    addLink: async (linkData) => {
+        const ref = collection(db, "links");
+        const docRef = await addDoc(ref, linkData);
+        return { ...linkData, id: docRef.id };
+    },
+
+    updateLink: async (id, linkData) => {
+        const ref = doc(db, "links", id);
+        await updateDoc(ref, linkData);
+    },
+
+    deleteLink: async (id) => {
+        const ref = doc(db, "links", id);
+        await deleteDoc(ref);
+    },
+
+    // Folders CRUD
+    addFolder: async (folderData) => {
+        const ref = collection(db, "folders");
+        const docRef = await addDoc(ref, folderData);
+        return { ...folderData, id: docRef.id };
+    },
+
+    updateFolder: async (id, folderData) => {
+        const ref = doc(db, "folders", id);
+        await updateDoc(ref, folderData);
+    },
+
+    deleteFolder: async (id) => {
+        const ref = doc(db, "folders", id);
         await deleteDoc(ref);
     },
 };

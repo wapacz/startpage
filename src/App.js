@@ -1,47 +1,40 @@
 /*
- *   Copyright (c) 2022 
+ *   Copyright (c) 2022
  *   All rights reserved.
  */
-import * as React from 'react';
-import Box from '@mui/material/Box';
-import Toolbar from '@mui/material/Toolbar';
-import AppBar from './AppBar';
-import Button from '@mui/material/Button';
+import React from 'react';
+import LoginPage from './components/LoginPage';
+import Home from './pages/Home';
 import Links from './pages/Links';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
+import Manager from './pages/Manager';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { firebaseService } from "./FirebaseService";
-
-const darkTheme = createTheme({
-  palette: {
-    mode: 'dark',
-  },
-});
+import { firebaseService } from './FirebaseService';
+import { LinksProvider } from './context/LinksContext';
+import { FoldersProvider } from './context/FoldersContext';
 
 function App() {
+    const isAuth = firebaseService.useState();
 
-  const isAuth = firebaseService.useState();
+    if (!isAuth) {
+        return <LoginPage onSignIn={() => firebaseService.signIn()} />;
+    }
 
-  return (
-    <ThemeProvider theme={darkTheme}>
-      <CssBaseline />
-      {!isAuth && <Button onClick={() => firebaseService.signIn()}>Sign in</Button>}
-      {isAuth && <Box>
-        <AppBar />
-        <Box component="main" sx={{ p: 1 }}>
-          <Toolbar />
-          <Router>
-            <Routes>
-              <Route path="*" element={<Navigate to="/startpage" />} />
-              <Route path="/startpage/" element={<Links />} />
-            </Routes>
-          </Router>
-        </Box>
-      </Box>}
-    </ThemeProvider>
-  );
+    return (
+        <LinksProvider>
+            <FoldersProvider>
+                <div className="min-h-screen bg-gray-950 text-gray-100">
+                    <Router>
+                        <Routes>
+                            <Route path="/startpage" element={<Home />} />
+                            <Route path="/startpage/links" element={<Links />} />
+                            <Route path="/startpage/manager" element={<Manager />} />
+                            <Route path="*" element={<Navigate to="/startpage" />} />
+                        </Routes>
+                    </Router>
+                </div>
+            </FoldersProvider>
+        </LinksProvider>
+    );
 }
-
 
 export default App;
