@@ -27,11 +27,13 @@ export default function LinkCard({ link, onEdit, onDelete }) {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [isMenuOpen]);
 
-    let faviconUrl = null;
-    try {
-        const hostname = new URL(link.url).hostname;
-        faviconUrl = `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`;
-    } catch { /* invalid URL */ }
+    let faviconSrc = link.faviconSrc || null;
+    if (!faviconSrc) {
+        try {
+            const hostname = new URL(link.url).hostname;
+            faviconSrc = `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`;
+        } catch { /* invalid URL */ }
+    }
 
     const linkContext = link.context || 'both';
 
@@ -40,8 +42,8 @@ export default function LinkCard({ link, onEdit, onDelete }) {
                         hover:border-gray-600 transition-all duration-200">
             <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-2 min-w-0">
-                    {faviconUrl && (
-                        <img src={faviconUrl} alt="" className="w-5 h-5 flex-shrink-0"
+                    {faviconSrc && (
+                        <img src={faviconSrc} alt="" className="w-5 h-5 flex-shrink-0"
                              onError={(e) => { e.target.style.display = 'none'; }} />
                     )}
                     <a href={link.url}

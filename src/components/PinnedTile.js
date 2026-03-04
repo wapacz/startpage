@@ -7,24 +7,26 @@ import { getIconComponent } from './IconPicker';
 
 function TileIcon({ link }) {
     if (link.iconType === 'favicon') {
-        let hostname = '';
-        try { hostname = new URL(link.url).hostname; } catch { /* invalid URL */ }
-        return (
+        let faviconSrc = link.faviconUrl;
+        if (!faviconSrc) {
+            try { faviconSrc = `https://www.google.com/s2/favicons?domain=${new URL(link.url).hostname}&sz=128`; } catch { /* invalid URL */ }
+        }
+        return faviconSrc ? (
             <img
-                src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=64`}
+                src={faviconSrc}
                 alt=""
-                className="w-10 h-10 rounded-lg group-hover:scale-110 transition-transform"
+                className="w-14 h-14 rounded-lg group-hover:scale-110 transition-transform"
                 onError={(e) => {
                     e.target.style.display = 'none';
                 }}
             />
-        );
+        ) : null;
     }
 
     const IconComponent = getIconComponent(link.icon);
     return (
         <IconComponent
-            size={40}
+            size={56}
             className="text-gray-400 group-hover:text-blue-400 transition-colors"
         />
     );

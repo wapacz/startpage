@@ -17,6 +17,7 @@ const EMPTY_FORM = {
     pinned: false,
     icon: 'globe',
     iconType: 'heroicon',
+    faviconUrl: '',
 };
 
 export default function LinkFormModal({ isOpen, onClose, onSave, editingLink }) {
@@ -35,6 +36,7 @@ export default function LinkFormModal({ isOpen, onClose, onSave, editingLink }) 
                 pinned: editingLink.pinned ?? false,
                 icon: editingLink.icon || 'globe',
                 iconType: editingLink.iconType || 'heroicon',
+                faviconUrl: editingLink.faviconUrl || '',
             });
         } else {
             setFormData(EMPTY_FORM);
@@ -54,6 +56,7 @@ export default function LinkFormModal({ isOpen, onClose, onSave, editingLink }) 
             pinned: formData.pinned,
             icon: formData.icon,
             iconType: formData.iconType,
+            faviconUrl: formData.faviconUrl.trim() || null,
         };
         onSave(linkData);
         onClose();
@@ -176,20 +179,29 @@ export default function LinkFormModal({ isOpen, onClose, onSave, editingLink }) 
                                 )}
 
                                 {formData.iconType === 'favicon' && (
-                                    <div className="flex items-center gap-3 text-sm text-gray-400">
-                                        {formData.url ? (
-                                            <>
-                                                <img
-                                                    src={`https://www.google.com/s2/favicons?domain=${(() => { try { return new URL(formData.url).hostname; } catch { return ''; }})()}&sz=64`}
-                                                    alt="Favicon preview"
-                                                    className="w-10 h-10 rounded-lg bg-gray-800 p-1"
-                                                    onError={(e) => { e.target.style.display = 'none'; }}
-                                                />
-                                                <span>Favicon from <span className="text-gray-300">{(() => { try { return new URL(formData.url).hostname; } catch { return 'URL'; }})()}</span></span>
-                                            </>
-                                        ) : (
-                                            <span className="text-gray-500">Enter a URL above to preview favicon</span>
-                                        )}
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="block text-sm text-gray-400 mb-1">Custom favicon URL (optional)</label>
+                                            <input type="url" value={formData.faviconUrl}
+                                                   onChange={(e) => setFormData({...formData, faviconUrl: e.target.value})}
+                                                   placeholder="https://example.com/icon.png"
+                                                   className={inputClassName} />
+                                        </div>
+                                        <div className="flex items-center gap-3 text-sm text-gray-400">
+                                            {(() => {
+                                                const previewSrc = formData.faviconUrl.trim()
+                                                    || (formData.url ? `https://www.google.com/s2/favicons?domain=${(() => { try { return new URL(formData.url).hostname; } catch { return ''; }})()}&sz=64` : null);
+                                                if (!previewSrc) return <span className="text-gray-500">Enter a URL above to preview favicon</span>;
+                                                return (
+                                                    <>
+                                                        <img src={previewSrc} alt="Favicon preview"
+                                                             className="w-10 h-10 rounded-lg bg-gray-800 p-1"
+                                                             onError={(e) => { e.target.style.display = 'none'; }} />
+                                                        <span>{formData.faviconUrl.trim() ? 'Custom favicon' : <>Auto-detected from <span className="text-gray-300">{(() => { try { return new URL(formData.url).hostname; } catch { return 'URL'; }})()}</span></>}</span>
+                                                    </>
+                                                );
+                                            })()}
+                                        </div>
                                     </div>
                                 )}
                             </div>
