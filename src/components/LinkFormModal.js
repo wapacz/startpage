@@ -4,7 +4,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { HiOutlineX } from 'react-icons/hi';
-import { AVAILABLE_ICONS, getIconComponent } from './IconPicker';
+import { AVAILABLE_ICONS } from './IconPicker';
 
 const EMPTY_FORM = {
     name: '',
