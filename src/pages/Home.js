@@ -5,28 +5,57 @@
 import React, { useState, useMemo } from 'react';
 import { useLinks } from '../context/LinksContext';
 import { useLocationContext } from '../hooks/useLocationContext';
+import { useTheme } from '../context/ThemeContext';
 import AppBar from '../components/AppBar';
 import PinnedTile from '../components/PinnedTile';
 import LinkFormModal from '../components/LinkFormModal';
 import Footer from '../components/Footer';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { HiOutlinePlus } from 'react-icons/hi';
 
 export default function Home() {
     const { allLinks, isLoading, addLink } = useLinks();
     const { locationContext, changeLocationContext } = useLocationContext();
+    const { theme, toggleTheme } = useTheme();
 
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
 
     const pinnedLinks = useMemo(() => {
         if (!allLinks) return [];
-        return allLinks.filter(link => {
-            if (!link.pinned) return false;
-            if (locationContext === 'all') return true;
-            const linkContext = link.context || 'both';
-            return linkContext === 'both' || linkContext === locationContext;
-        });
+        return allLinks
+            .filter(link => {
+                if (!link.pinned) return false;
+                if (locationContext === 'all') return true;
+                const linkContext = link.context || 'both';
+                return linkContext === 'both' || linkContext === locationContext;
+            })
+            .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
     }, [allLinks, locationContext]);
+
+    const groupedPinnedLinks = useMemo(() => {
+        const groups = new Map();
+        for (const link of pinnedLinks) {
+            const groupName = link.tileGroup || null;
+            if (!groups.has(groupName)) groups.set(groupName, []);
+            groups.get(groupName).push(link);
+        }
+        return groups;
+    }, [pinnedLinks]);
+
+    const existingGroups = useMemo(() => {
+        if (!allLinks) return [];
+        const groupNames = new Set();
+        for (const link of allLinks) {
+            if (link.tileGroup) groupNames.add(link.tileGroup);
+        }
+        return [...groupNames].sort();
+    }, [allLinks]);
+
+    const hasGroups = useMemo(() => {
+        for (const key of groupedPinnedLinks.keys()) {
+            if (key !== null) return true;
+        }
+        return false;
+    }, [groupedPinnedLinks]);
 
     const handleAddLink = () => {
         setIsFormModalOpen(true);
@@ -45,6 +74,8 @@ export default function Home() {
                 onLocationChange={changeLocationContext}
                 onAddLink={handleAddLink}
                 showSearch={false}
+                theme={theme}
+                onToggleTheme={toggleTheme}
             />
 
             <main className="flex-1 flex flex-col items-center justify-center px-6 pt-20 pb-8">
@@ -62,20 +93,21 @@ export default function Home() {
                 )}
 
                 {!isLoading && pinnedLinks.length > 0 && (
-                    <div className="flex flex-wrap justify-center gap-4 w-3/5">
-                        {pinnedLinks.map(link => (
-                            <PinnedTile key={link.id} link={link} />
+                    <div className="w-3/5 space-y-6">
+                        {[...groupedPinnedLinks.entries()].map(([groupName, groupLinks]) => (
+                            <div key={groupName ?? '__ungrouped'}>
+                                {hasGroups && groupName && (
+                                    <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
+                                        {groupName}
+                                    </h2>
+                                )}
+                                <div className="flex flex-wrap justify-center gap-4">
+                                    {groupLinks.map(link => (
+                                        <PinnedTile key={link.id} link={link} />
+                                    ))}
+                                </div>
+                            </div>
                         ))}
-                        <button
-                            onClick={handleAddLink}
-                            className="flex flex-col items-center justify-center gap-3
-                                       w-32 h-32
-                                       border-2 border-dashed border-gray-800 rounded-2xl
-                                       hover:border-gray-600 transition-all duration-200
-                                       cursor-pointer group"
-                        >
-                            <HiOutlinePlus size={28} className="text-gray-600 group-hover:text-gray-400 transition-colors" />
-                        </button>
                     </div>
                 )}
             </main>
@@ -87,6 +119,7 @@ export default function Home() {
                 onClose={() => setIsFormModalOpen(false)}
                 onSave={handleSaveLink}
                 editingLink={null}
+                existingGroups={existingGroups}
             />
         </div>
     );

@@ -3,7 +3,7 @@
  *   All rights reserved.
  */
 import React, { useState } from 'react';
-import { HiOutlineSearch, HiOutlineLogout, HiOutlinePlus, HiOutlineMenu, HiOutlineX, HiOutlineHome, HiOutlineCollection, HiOutlineViewList } from 'react-icons/hi';
+import { HiOutlineSearch, HiOutlineLogout, HiOutlinePlus, HiOutlineMenu, HiOutlineX, HiOutlineHome, HiOutlineCollection, HiOutlineViewList, HiOutlineSun, HiOutlineMoon } from 'react-icons/hi';
 import { Link, useLocation } from 'react-router-dom';
 import { firebaseService } from '../FirebaseService';
 
@@ -13,7 +13,7 @@ const LOCATION_OPTIONS = [
     { value: 'home', label: 'Home' },
 ];
 
-export default function AppBar({ searchQuery, onSearchChange, locationContext, onLocationChange, onAddLink, showSearch = true }) {
+export default function AppBar({ searchQuery, onSearchChange, locationContext, onLocationChange, onAddLink, showSearch = true, theme, onToggleTheme }) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const location = useLocation();
     const currentPath = location.pathname.replace(/\/$/, '');
@@ -57,7 +57,7 @@ export default function AppBar({ searchQuery, onSearchChange, locationContext, o
                     </div>
                 )}
 
-                {!showSearch && <div className="flex-1" />}
+                <div className="flex-1" />
 
                 <div className="hidden sm:flex items-center bg-gray-800 rounded-lg border border-gray-700 p-0.5">
                     {LOCATION_OPTIONS.map(option => (
@@ -83,6 +83,16 @@ export default function AppBar({ searchQuery, onSearchChange, locationContext, o
                     <HiOutlinePlus size={18} />
                     Add Link
                 </button>
+
+                {onToggleTheme && (
+                    <button
+                        onClick={onToggleTheme}
+                        className="hidden sm:inline-flex p-2 text-gray-400 hover:text-white transition-colors"
+                        title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                    >
+                        {theme === 'dark' ? <HiOutlineSun size={20} /> : <HiOutlineMoon size={20} />}
+                    </button>
+                )}
 
                 <button
                     onClick={() => firebaseService.signOut()}
@@ -131,6 +141,12 @@ export default function AppBar({ searchQuery, onSearchChange, locationContext, o
                             className="w-full py-2 bg-blue-600 text-white rounded-lg text-sm">
                         Add Link
                     </button>
+                    {onToggleTheme && (
+                        <button onClick={onToggleTheme}
+                                className="w-full py-2 bg-gray-800 text-gray-400 rounded-lg text-sm flex items-center justify-center gap-2">
+                            {theme === 'dark' ? <><HiOutlineSun size={16} /> Light Mode</> : <><HiOutlineMoon size={16} /> Dark Mode</>}
+                        </button>
+                    )}
                     <button onClick={() => firebaseService.signOut()}
                             className="w-full py-2 bg-gray-800 text-gray-400 rounded-lg text-sm">
                         Logout

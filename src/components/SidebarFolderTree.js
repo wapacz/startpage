@@ -117,15 +117,15 @@ export default function SidebarFolderTree({ tree, selectedFolderId, onSelectFold
     );
 
     return (
-        <aside className="w-72 flex-shrink-0 bg-gray-900 border-r border-gray-800 flex flex-col h-full">
-            <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
-                <span className="text-sm font-medium text-white">Folders</span>
+        <>
+            <div className="px-4 py-2 border-b border-gray-800 flex items-center justify-between">
+                <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Folders</span>
                 <button
                     onClick={onAddRootFolder}
                     className="p-1 text-gray-400 hover:text-white hover:bg-gray-800 rounded transition-colors"
                     title="New folder"
                 >
-                    <HiOutlineFolderAdd size={18} />
+                    <HiOutlineFolderAdd size={16} />
                 </button>
             </div>
 
@@ -171,6 +171,6 @@ export default function SidebarFolderTree({ tree, selectedFolderId, onSelectFold
                     </button>
                 )}
             </nav>
-        </aside>
+        </>
     );
 }

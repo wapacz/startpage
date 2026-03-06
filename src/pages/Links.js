@@ -6,6 +6,7 @@ import React, { useState, useMemo } from 'react';
 import { useLinks } from '../context/LinksContext';
 import { useSearch } from '../hooks/useSearch';
 import { useLocationContext } from '../hooks/useLocationContext';
+import { useTheme } from '../context/ThemeContext';
 import AppBar from '../components/AppBar';
 import LinkCard from '../components/LinkCard';
 import LinkFormModal from '../components/LinkFormModal';
@@ -16,6 +17,7 @@ import EmptyState from '../components/EmptyState';
 export default function Links() {
     const { allLinks, isLoading, addLink, updateLink, deleteLink } = useLinks();
     const { locationContext, changeLocationContext } = useLocationContext();
+    const { theme, toggleTheme } = useTheme();
 
     const locationFilteredLinks = useMemo(() => {
         if (!allLinks) return null;
@@ -27,6 +29,15 @@ export default function Links() {
     }, [allLinks, locationContext]);
 
     const { searchQuery, setSearchQuery, filteredLinks: displayedLinks } = useSearch(locationFilteredLinks);
+
+    const existingGroups = useMemo(() => {
+        if (!allLinks) return [];
+        const groupNames = new Set();
+        for (const link of allLinks) {
+            if (link.tileGroup) groupNames.add(link.tileGroup);
+        }
+        return [...groupNames].sort();
+    }, [allLinks]);
 
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [editingLink, setEditingLink] = useState(null);
@@ -70,6 +81,8 @@ export default function Links() {
                 locationContext={locationContext}
                 onLocationChange={changeLocationContext}
                 onAddLink={handleAddLink}
+                theme={theme}
+                onToggleTheme={toggleTheme}
             />
 
             <main className="pt-20 px-6 pb-8">
@@ -98,6 +111,7 @@ export default function Links() {
                 onClose={() => setIsFormModalOpen(false)}
                 onSave={handleSaveLink}
                 editingLink={editingLink}
+                existingGroups={existingGroups}
             />
 
             <DeleteConfirmModal

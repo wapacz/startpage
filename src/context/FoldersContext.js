@@ -71,7 +71,7 @@ export function FoldersProvider({ children }) {
     };
 
     return (
-        <FoldersContext.Provider value={{ allFolders, isLoading, addFolder, updateFolder, deleteFolder, buildTree }}>
+        <FoldersContext.Provider value={{ allFolders, isLoading, addFolder, updateFolder, deleteFolder, buildTree, refetchFolders: fetchFolders }}>
             {children}
         </FoldersContext.Provider>
     );

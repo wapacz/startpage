@@ -61,7 +61,7 @@ Singleton service object that wraps all Firebase operations: signIn/signOut, get
 ```
 { id, name, url, description?, tags?: string[], keywords?: string[], newTab?: boolean,
   context: "work"|"home"|"both", pinned?: boolean, icon?: string, iconType?: "heroicon"|"favicon",
-  folderId?: string }
+  folderId?: string, tileGroup?: string, sortOrder?: number }
 ```
 
 **Firestore "folders" collection:**
@@ -71,6 +71,8 @@ Singleton service object that wraps all Firebase operations: signIn/signOut, get
 
 - `context` defaults to `"both"`, `iconType` defaults to `"heroicon"` for existing docs
 - `pinned` links appear as icon tiles on the homepage
+- `tileGroup` groups pinned tiles on the homepage (null = ungrouped)
+- `sortOrder` controls display order of pinned tiles within a group (default 0)
 - `folderId` associates a link with a folder (null = root/uncategorized)
 - `parentId` on folders enables nesting (null = root folder)
 - Tree built client-side via `buildTree()` in FoldersContext

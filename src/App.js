@@ -11,6 +11,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { firebaseService } from './FirebaseService';
 import { LinksProvider } from './context/LinksContext';
 import { FoldersProvider } from './context/FoldersContext';
+import { ThemeProvider } from './context/ThemeContext';
 
 function App() {
     const isAuth = firebaseService.useState();
@@ -20,6 +21,7 @@ function App() {
     }
 
     return (
+        <ThemeProvider>
         <LinksProvider>
             <FoldersProvider>
                 <div className="min-h-screen bg-gray-950 text-gray-100">
@@ -34,6 +36,7 @@ function App() {
                 </div>
             </FoldersProvider>
         </LinksProvider>
+        </ThemeProvider>
     );
 }
 

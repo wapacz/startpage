@@ -83,7 +83,44 @@ function ContentLinkRow({ link, onEdit, onDelete, onMove }) {
     );
 }
 
-export default function ContentLinkList({ links, onEditLink, onDeleteLink, onMoveLink }) {
+function groupLinks(links, groupBy) {
+    if (groupBy === 'none') return null;
+
+    const groups = new Map();
+
+    for (const link of links) {
+        if (groupBy === 'tags') {
+            const tags = link.tags?.length ? link.tags : [null];
+            for (const tag of tags) {
+                const key = tag || '__untagged';
+                if (!groups.has(key)) groups.set(key, []);
+                groups.get(key).push(link);
+            }
+        } else if (groupBy === 'context') {
+            const key = link.context || 'both';
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(link);
+        }
+    }
+
+    // Sort group keys alphabetically, but put __untagged / 'both' at the end
+    const sortedEntries = [...groups.entries()].sort((a, b) => {
+        if (a[0] === '__untagged' || a[0] === 'both') return 1;
+        if (b[0] === '__untagged' || b[0] === 'both') return -1;
+        return a[0].localeCompare(b[0]);
+    });
+
+    return sortedEntries;
+}
+
+const GROUP_LABELS = {
+    __untagged: 'Untagged',
+    both: 'Both',
+    work: 'Work',
+    home: 'Home',
+};
+
+export default function ContentLinkList({ links, onEditLink, onDeleteLink, onMoveLink, groupBy = 'none' }) {
     if (links.length === 0) {
         return (
             <div className="text-center text-gray-500 py-16">
@@ -92,16 +129,44 @@ export default function ContentLinkList({ links, onEditLink, onDeleteLink, onMov
         );
     }
 
+    const grouped = groupLinks(links, groupBy);
+
+    if (!grouped) {
+        return (
+            <div className="divide-y divide-gray-800/50">
+                {links.map(link => (
+                    <ContentLinkRow
+                        key={link.id}
+                        link={link}
+                        onEdit={onEditLink}
+                        onDelete={onDeleteLink}
+                        onMove={onMoveLink}
+                    />
+                ))}
+            </div>
+        );
+    }
+
     return (
-        <div className="divide-y divide-gray-800/50">
-            {links.map(link => (
-                <ContentLinkRow
-                    key={link.id}
-                    link={link}
-                    onEdit={onEditLink}
-                    onDelete={onDeleteLink}
-                    onMove={onMoveLink}
-                />
+        <div>
+            {grouped.map(([groupKey, groupedLinks]) => (
+                <div key={groupKey}>
+                    <div className="sticky top-0 z-10 px-4 py-1.5 bg-gray-800/60 backdrop-blur-sm border-b border-gray-800/50">
+                        <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+                            {GROUP_LABELS[groupKey] || groupKey}
+                        </span>
+                        <span className="text-xs text-gray-600 ml-2">{groupedLinks.length}</span>
+                    </div>
+                    {groupedLinks.map(link => (
+                        <ContentLinkRow
+                            key={`${groupKey}-${link.id}`}
+                            link={link}
+                            onEdit={onEditLink}
+                            onDelete={onDeleteLink}
+                            onMove={onMoveLink}
+                        />
+                    ))}
+                </div>
             ))}
         </div>
     );

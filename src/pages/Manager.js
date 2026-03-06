@@ -6,30 +6,50 @@ import React, { useState, useMemo } from 'react';
 import { useLinks } from '../context/LinksContext';
 import { useFolders, buildTree } from '../context/FoldersContext';
 import { useLocationContext } from '../hooks/useLocationContext';
+import { useTheme } from '../context/ThemeContext';
+import { useSearch } from '../hooks/useSearch';
 import AppBar from '../components/AppBar';
 import SidebarFolderTree from '../components/SidebarFolderTree';
+import SidebarTagList from '../components/SidebarTagList';
 import ContentLinkList from '../components/ContentLinkList';
 import FolderFormModal from '../components/FolderFormModal';
 import LinkFormModal from '../components/LinkFormModal';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import MoveToFolderModal from '../components/MoveToFolderModal';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { HiOutlinePlus } from 'react-icons/hi';
+import { HiOutlinePlus, HiOutlineDownload, HiOutlineUpload } from 'react-icons/hi';
+import { downloadBookmarks, parseBookmarksFile } from '../utils/bookmarkIO';
 
 export default function Manager() {
-    const { allLinks, isLoading: linksLoading, addLink, updateLink, deleteLink } = useLinks();
-    const { allFolders, isLoading: foldersLoading, addFolder, updateFolder, deleteFolder } = useFolders();
+    const { allLinks, isLoading: linksLoading, addLink, updateLink, deleteLink, refetchLinks } = useLinks();
+    const { allFolders, isLoading: foldersLoading, addFolder, updateFolder, deleteFolder, refetchFolders } = useFolders();
     const { locationContext, changeLocationContext } = useLocationContext();
+    const { theme, toggleTheme } = useTheme();
 
     const isLoading = linksLoading || foldersLoading;
+
+    const existingGroups = useMemo(() => {
+        if (!allLinks) return [];
+        const groupNames = new Set();
+        for (const link of allLinks) {
+            if (link.tileGroup) groupNames.add(link.tileGroup);
+        }
+        return [...groupNames].sort();
+    }, [allLinks]);
 
     const tree = useMemo(() => {
         if (!allLinks) return { rootFolders: [], rootLinks: [], folderMap: {} };
         return buildTree(allFolders, allLinks);
     }, [allFolders, allLinks]);
 
+    // Sidebar view mode: folders or tags
+    const [viewMode, setViewMode] = useState('folders');
+
     // Selected folder in sidebar (null = "All Bookmarks", 'uncategorized' = root links only)
     const [selectedFolderId, setSelectedFolderId] = useState(null);
+
+    // Selected tag in sidebar (null = all, '__untagged' = links without tags)
+    const [selectedTag, setSelectedTag] = useState(null);
 
     // Folder modal state
     const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
@@ -48,18 +68,41 @@ export default function Manager() {
     // Move state
     const [movingLink, setMovingLink] = useState(null);
 
-    // Compute displayed links based on selected folder
+    // Import state
+    const [isImporting, setIsImporting] = useState(false);
+
+    // Build tag list with counts for sidebar
+    const tagList = useMemo(() => {
+        if (!allLinks) return [];
+        const tagCounts = new Map();
+        for (const link of allLinks) {
+            if (link.tags?.length) {
+                for (const tag of link.tags) {
+                    tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+                }
+            }
+        }
+        return [...tagCounts.entries()]
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([tag, count]) => ({ tag, count }));
+    }, [allLinks]);
+
+    const { searchQuery, setSearchQuery, filteredLinks: searchFilteredLinks } = useSearch(allLinks);
+
+    // When searching, show results from all links; otherwise filter by selected folder or tag
     const displayedLinks = useMemo(() => {
-        if (selectedFolderId === null) {
-            // All bookmarks — collect all links from tree
-            return allLinks || [];
+        if (searchQuery.trim()) return searchFilteredLinks || [];
+
+        if (viewMode === 'tags') {
+            if (selectedTag === null) return allLinks || [];
+            if (selectedTag === '__untagged') return (allLinks || []).filter(l => !l.tags?.length);
+            return (allLinks || []).filter(l => l.tags?.includes(selectedTag));
         }
-        if (selectedFolderId === 'uncategorized') {
-            return tree.rootLinks;
-        }
+
+        if (selectedFolderId === null) return allLinks || [];
+        if (selectedFolderId === 'uncategorized') return tree.rootLinks;
         const folder = tree.folderMap[selectedFolderId];
         if (!folder) return [];
-        // Collect links from this folder and all nested subfolders
         function collectLinks(folderNode) {
             let links = [...folderNode.links];
             for (const child of folderNode.children) {
@@ -68,14 +111,20 @@ export default function Manager() {
             return links;
         }
         return collectLinks(folder);
-    }, [selectedFolderId, allLinks, tree]);
+    }, [searchQuery, searchFilteredLinks, viewMode, selectedTag, selectedFolderId, allLinks, tree]);
 
-    const selectedFolderName = useMemo(() => {
+    const contentTitle = useMemo(() => {
+        if (searchQuery.trim()) return 'Search Results';
+        if (viewMode === 'tags') {
+            if (selectedTag === null) return 'All Bookmarks';
+            if (selectedTag === '__untagged') return 'Untagged';
+            return selectedTag;
+        }
         if (selectedFolderId === null) return 'All Bookmarks';
         if (selectedFolderId === 'uncategorized') return 'Uncategorized';
         const folder = tree.folderMap[selectedFolderId];
         return folder?.name || 'Unknown';
-    }, [selectedFolderId, tree.folderMap]);
+    }, [searchQuery, viewMode, selectedTag, selectedFolderId, tree.folderMap]);
 
     // Folder actions
     const handleAddRootFolder = () => {
@@ -172,15 +221,58 @@ export default function Manager() {
         }
     };
 
+    const handleExport = () => {
+        downloadBookmarks(tree);
+    };
+
+    const handleImport = () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.html,.htm';
+        input.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            setIsImporting(true);
+            try {
+                const htmlString = await file.text();
+                const parsed = parseBookmarksFile(htmlString);
+
+                // Create folders first, mapping import IDs to real Firestore IDs
+                const folderIdMap = {};
+                for (const folder of parsed.folders) {
+                    const realParentId = folder.parentId ? folderIdMap[folder.parentId] : null;
+                    const created = await addFolder({ name: folder.name, parentId: realParentId || null });
+                    folderIdMap[folder._importId] = created.id;
+                }
+
+                // Create links with mapped folder IDs
+                for (const link of parsed.links) {
+                    const { _importFolderId, ...linkData } = link;
+                    const folderId = _importFolderId ? folderIdMap[_importFolderId] : null;
+                    await addLink({ ...linkData, folderId: folderId || null });
+                }
+
+                await refetchLinks();
+                await refetchFolders();
+            } catch (error) {
+                console.error('Import failed:', error);
+            } finally {
+                setIsImporting(false);
+            }
+        };
+        input.click();
+    };
+
     return (
         <>
             <AppBar
-                searchQuery=""
-                onSearchChange={() => {}}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
                 locationContext={locationContext}
                 onLocationChange={changeLocationContext}
                 onAddLink={handleAddLink}
-                showSearch={false}
+                theme={theme}
+                onToggleTheme={toggleTheme}
             />
 
             <div className="pt-16 flex h-screen">
@@ -190,29 +282,84 @@ export default function Manager() {
                     </div>
                 ) : (
                     <>
-                        <SidebarFolderTree
-                            tree={tree}
-                            selectedFolderId={selectedFolderId}
-                            onSelectFolder={setSelectedFolderId}
-                            onAddRootFolder={handleAddRootFolder}
-                            onAddSubfolder={handleAddSubfolder}
-                            onRenameFolder={handleRenameFolder}
-                            onDeleteFolder={handleDeleteFolder}
-                        />
+                        <aside className="w-72 flex-shrink-0 bg-gray-900 border-r border-gray-800 flex flex-col h-full">
+                            <div className="px-3 py-2 border-b border-gray-800 flex items-center gap-1">
+                                <div className="flex items-center bg-gray-800 rounded-lg border border-gray-700 p-0.5 flex-1">
+                                    {[
+                                        { value: 'folders', label: 'Folders' },
+                                        { value: 'tags', label: 'Tags' },
+                                    ].map(option => (
+                                        <button
+                                            key={option.value}
+                                            onClick={() => {
+                                                setViewMode(option.value);
+                                                setSelectedFolderId(null);
+                                                setSelectedTag(null);
+                                            }}
+                                            className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                                                viewMode === option.value
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'text-gray-400 hover:text-gray-200'
+                                            }`}
+                                        >
+                                            {option.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {viewMode === 'folders' ? (
+                                <SidebarFolderTree
+                                    tree={tree}
+                                    selectedFolderId={selectedFolderId}
+                                    onSelectFolder={setSelectedFolderId}
+                                    onAddRootFolder={handleAddRootFolder}
+                                    onAddSubfolder={handleAddSubfolder}
+                                    onRenameFolder={handleRenameFolder}
+                                    onDeleteFolder={handleDeleteFolder}
+                                />
+                            ) : (
+                                <SidebarTagList
+                                    tags={tagList}
+                                    selectedTag={selectedTag}
+                                    onSelectTag={setSelectedTag}
+                                    totalLinks={(allLinks || []).length}
+                                />
+                            )}
+                        </aside>
 
                         <main className="flex-1 flex flex-col overflow-hidden">
                             <div className="flex items-center justify-between px-6 py-3 border-b border-gray-800">
                                 <div>
-                                    <h2 className="text-lg font-semibold text-white">{selectedFolderName}</h2>
-                                    <p className="text-xs text-gray-500">{displayedLinks.length} link{displayedLinks.length !== 1 ? 's' : ''}</p>
+                                    <h2 className="text-lg font-semibold text-white">{contentTitle}</h2>
+                                    <p className="text-xs text-gray-500">{(displayedLinks).length} link{(displayedLinks).length !== 1 ? 's' : ''}</p>
                                 </div>
-                                <button
-                                    onClick={handleAddLink}
-                                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600
-                                               hover:bg-blue-500 text-white text-sm rounded-lg transition-colors"
-                                >
-                                    <HiOutlinePlus size={16} /> Add Link
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={handleImport}
+                                        disabled={isImporting}
+                                        className="inline-flex items-center gap-1.5 px-3 py-2 bg-gray-800 border border-gray-700
+                                                   hover:bg-gray-700 text-gray-300 text-sm rounded-lg transition-colors disabled:opacity-50"
+                                        title="Import bookmarks"
+                                    >
+                                        <HiOutlineUpload size={16} /> {isImporting ? 'Importing...' : 'Import'}
+                                    </button>
+                                    <button
+                                        onClick={handleExport}
+                                        className="inline-flex items-center gap-1.5 px-3 py-2 bg-gray-800 border border-gray-700
+                                                   hover:bg-gray-700 text-gray-300 text-sm rounded-lg transition-colors"
+                                        title="Export bookmarks"
+                                    >
+                                        <HiOutlineDownload size={16} /> Export
+                                    </button>
+                                    <button
+                                        onClick={handleAddLink}
+                                        className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600
+                                                   hover:bg-blue-500 text-white text-sm rounded-lg transition-colors"
+                                    >
+                                        <HiOutlinePlus size={16} /> Add Link
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="flex-1 overflow-y-auto">
@@ -241,6 +388,7 @@ export default function Manager() {
                 onClose={() => setIsLinkModalOpen(false)}
                 onSave={handleSaveLink}
                 editingLink={editingLink}
+                existingGroups={existingGroups}
             />
 
             <DeleteConfirmModal
